@@ -13,7 +13,7 @@ def get_position(participant):
     return None
 
 
-def extract_mid_matchup(match, puuid):
+def extract_role_matchup(match, puuid, target_role):
     info = match.get("info", {})
     participants = info.get("participants", [])
     queue_id = info.get("queueId")
@@ -26,26 +26,24 @@ def extract_mid_matchup(match, puuid):
         return None
 
     player_position = get_position(player)
-    if player_position != "MIDDLE":
+    if player_position != target_role:
         return None
 
-    enemy_mid = next(
+    enemy_same_role = next(
         (
             p for p in participants
             if p.get("teamId") != player.get("teamId")
-            and get_position(p) == "MIDDLE"
+            and get_position(p) == target_role
         ),
         None
     )
 
-    if not enemy_mid:
+    if not enemy_same_role:
         return None
 
     return {
-        "match_id": match.get("metadata", {}).get("matchId"),
-        "queue_id": queue_id,
-        "patch": info.get("gameVersion"),
         "player": player.get("championName"),
-        "enemy": enemy_mid.get("championName"),
+        "enemy": enemy_same_role.get("championName"),
         "win": player.get("win"),
+        "patch": info.get("gameVersion"),
     }

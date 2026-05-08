@@ -2,7 +2,7 @@ from collections import defaultdict
 import time
 
 from riot_api import get_account, get_match_ids, get_match_with_retry
-from parser import extract_mid_matchup
+from parser import extract_role_matchup
 
 
 def parse_riot_id(riot_id):
@@ -10,6 +10,25 @@ def parse_riot_id(riot_id):
         raise ValueError("Riot ID must be in the format Name#TAG")
     name, tag = riot_id.split("#", 1)
     return name, tag
+
+
+def parse_role_input(role_input):
+    role_map = {
+        "top": "TOP",
+        "jungle": "JUNGLE",
+        "jg": "JUNGLE",
+        "mid": "MIDDLE",
+        "middle": "MIDDLE",
+        "bot": "BOTTOM",
+        "bottom": "BOTTOM",
+        "adc": "BOTTOM",
+        "support": "UTILITY",
+        "sup": "UTILITY",
+        "utility": "UTILITY",
+    }
+
+    normalized = role_input.strip().lower()
+    return role_map.get(normalized)
 
 
 def get_many_match_ids(puuid, total_count=200):
@@ -65,15 +84,32 @@ def summarize_matchups(rows):
 
 def main():
     riot_id = input("Enter Riot ID (example: Caps#EUW): ").strip()
+    role_input = input("Enter role (top, jungle, mid, bot, support): ").strip()
+    count_input = input("How many recent matches to scan? (e.g. 50, 100, 200): ").strip()
+
+    try:
+        total_count = int(count_input)
+        if total_count <= 0:
+            raise ValueError
+    except:
+        print("Invalid number. Defaulting to 100.")
+        total_count = 100
 
     name, tag = parse_riot_id(riot_id)
+    role = parse_role_input(role_input)
+
+    if not role:
+        print("Invalid role. Defaulting to MIDDLE.")
+        role = "MIDDLE"
+
+    print(f"Selected role: {role}")
 
     print("Getting account...")
     account = get_account(name, tag)
     puuid = account["puuid"]
 
     print("Getting match IDs...")
-    match_ids = get_many_match_ids(puuid, total_count=200)
+    match_ids = get_many_match_ids(puuid, total_count=total_count)
     print(f"Total match IDs fetched: {len(match_ids)}")
 
     results = []
@@ -81,7 +117,7 @@ def main():
     for index, match_id in enumerate(match_ids, start=1):
         try:
             match = get_match_with_retry(match_id)
-            row = extract_mid_matchup(match, puuid)
+            row = extract_role_matchup(match, puuid, role)
 
             if row:
                 results.append(row)
@@ -94,13 +130,13 @@ def main():
         except Exception as e:
             print(f"Error in match {match_id}: {e}")
 
-    print("\nRanked solo queue midlane analysis:\n")
+    print(f"\nRanked solo queue {role.lower()} analysis:\n")
 
     if not results:
-        print("No ranked solo queue midlane games found.")
+        print(f"No ranked solo queue games found for role {role}.")
         return
 
-    print(f"Found {len(results)} ranked solo queue midlane games.\n")
+    print(f"Found {len(results)} ranked solo queue games for role {role}.\n")
 
     most_played = summarize_most_played(results)
     sorted_champions = sorted(

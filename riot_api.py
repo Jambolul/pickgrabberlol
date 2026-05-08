@@ -20,13 +20,6 @@ def get_match_ids(puuid, start=0, count=100):
     return r.json()
 
 
-def get_match(match_id):
-    url = f"{BASE_URL}/lol/match/v5/matches/{match_id}"
-    r = requests.get(url, headers=HEADERS, timeout=20)
-    r.raise_for_status()
-    return r.json()
-
-
 def get_match_with_retry(match_id, max_retries=5):
     url = f"{BASE_URL}/lol/match/v5/matches/{match_id}"
 
