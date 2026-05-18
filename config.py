@@ -5,7 +5,7 @@ load_dotenv()
 
 RIOT_API_KEY = os.getenv("RIOT_API_KEY")
 
-print("Loaded key repr:", repr(RIOT_API_KEY))
+print("Loaded key:", RIOT_API_KEY)
 
 if not RIOT_API_KEY:
     raise ValueError("Missing RIOT_API_KEY in .env file")
